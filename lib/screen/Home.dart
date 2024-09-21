@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:uiaf/data/categories.dart';
 import 'package:uiaf/models/grocery_item.dart';
 import 'package:uiaf/widgets/grocery_item.dart';
 import 'package:uiaf/widgets/new_item.dart';
+import 'package:http/http.dart' as http;
 
 class Home extends StatefulWidget {
   const Home({
@@ -13,18 +17,45 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final List<GroceryItem> listCategories = [];
+  List<GroceryItem> listCategories = [];
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _loadItem();
+  }
+
+  void _loadItem() async {
+    final url = Uri.https(
+        'flutterprep-a2d8e-default-rtdb.firebaseio.com', 'shopping-list.json');
+    final response = await http.get(url);
+    final Map<String, dynamic> loadItem = json.decode(response.body);
+    final List<GroceryItem> indentedItem = [];
+    for (final item in loadItem.entries) {
+      final category = categories.entries
+          .firstWhere(
+            (catItem) => catItem.value.name == item.value["category"],
+          )
+          .value;
+      indentedItem.add(GroceryItem(
+        id: item.key,
+        name: item.value['name'],
+        quantity: item.value['quantity'],
+        category: category,
+      ));
+    }
+    setState(() {
+      listCategories = indentedItem;
+    });
+  }
 
   void _addNewItem() async {
-    final newItem = await Navigator.of(context).push<GroceryItem>(
+    await Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(
         builder: (ctx) => const NewItem(),
       ),
     );
-    if (newItem == null) return;
-    setState(() {
-      listCategories.add(newItem);
-    });
+    _loadItem();
   }
 
   void _disMissItem(GroceryItem item) {
