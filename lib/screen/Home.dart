@@ -25,10 +25,8 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         actions: [
           IconButton(
-            onPressed: () {
-              _addNewItem;
-            },
-            icon: Icon(Icons.add),
+            onPressed: _addNewItem,
+            icon: const Icon(Icons.add),
           ),
         ],
         centerTitle: false,
