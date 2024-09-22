@@ -88,19 +88,19 @@ class _HomeState extends State<Home> {
           label: "Undo",
           onPressed: () {
             setState(
-              () async {
+              () {
                 listCategories.add(item);
                 final url = Uri.https(
                     'flutterprep-a2d8e-default-rtdb.firebaseio.com',
                     'shopping-list.json');
-                await http.post(
+                http.post(
                   url,
                   headers: {'Content-Type': 'application/json'},
                   body: json.encode(
                     {
-                      "name": item.id,
+                      "name": item.name,
                       "quantity": item.quantity,
-                      "category": item.name
+                      "category": item.category?.name
                     },
                   ),
                 );
