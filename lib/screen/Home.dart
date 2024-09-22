@@ -18,6 +18,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<GroceryItem> listCategories = [];
+  bool _isloading = true;
   @override
   void initState() {
     // TODO: implement initState
@@ -46,16 +47,21 @@ class _HomeState extends State<Home> {
     }
     setState(() {
       listCategories = indentedItem;
+      _isloading = false;
     });
   }
 
   void _addNewItem() async {
-    await Navigator.of(context).push<GroceryItem>(
+    final newGroceryItem = await Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(
         builder: (ctx) => const NewItem(),
       ),
     );
-    _loadItem();
+
+    if (newGroceryItem == null) return;
+    setState(() {
+      listCategories.add(newGroceryItem!);
+    });
   }
 
   void _disMissItem(GroceryItem item) {
@@ -89,6 +95,11 @@ class _HomeState extends State<Home> {
         style: Theme.of(context).textTheme.titleLarge,
       ),
     );
+    if (_isloading) {
+      content = const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
     if (listCategories.isNotEmpty) {
       content = ListView.builder(
         itemCount: listCategories.length,
