@@ -19,6 +19,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   List<GroceryItem> listCategories = [];
   bool _isloading = true;
+  String? error;
   @override
   void initState() {
     // TODO: implement initState
@@ -30,6 +31,11 @@ class _HomeState extends State<Home> {
     final url = Uri.https(
         'flutterprep-a2d8e-default-rtdb.firebaseio.com', 'shopping-list.json');
     final response = await http.get(url);
+    if (response.statusCode >= 400) {
+      setState(() {
+        error = "Try again later";
+      });
+    }
     final Map<String, dynamic> loadItem = json.decode(response.body);
     final List<GroceryItem> indentedItem = [];
     for (final item in loadItem.entries) {
@@ -69,6 +75,11 @@ class _HomeState extends State<Home> {
     setState(() {
       listCategories.remove(item);
     });
+    final url = Uri.https('flutterprep-a2d8e-default-rtdb.firebaseio.com',
+        'shopping-list/${item.id}.json');
+    http.delete(
+      url,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 10),
@@ -77,8 +88,22 @@ class _HomeState extends State<Home> {
           label: "Undo",
           onPressed: () {
             setState(
-              () {
-                listCategories.insert(indexOfCurrentItem, item);
+              () async {
+                listCategories.add(item);
+                final url = Uri.https(
+                    'flutterprep-a2d8e-default-rtdb.firebaseio.com',
+                    'shopping-list.json');
+                await http.post(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: json.encode(
+                    {
+                      "name": item.id,
+                      "quantity": item.quantity,
+                      "category": item.name
+                    },
+                  ),
+                );
               },
             );
           },
@@ -100,6 +125,14 @@ class _HomeState extends State<Home> {
         child: CircularProgressIndicator(color: Colors.white),
       );
     }
+    if (error != null) {
+      content = Center(
+        child: Text(
+          error!,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+      );
+    }
     if (listCategories.isNotEmpty) {
       content = ListView.builder(
         itemCount: listCategories.length,
@@ -116,6 +149,7 @@ class _HomeState extends State<Home> {
         ),
       );
     }
+
     return Scaffold(
       appBar: AppBar(
         actions: [
