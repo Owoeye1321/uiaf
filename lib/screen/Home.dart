@@ -18,49 +18,47 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<GroceryItem> listCategories = [];
-  bool _isloading = true;
+  late Future<List<GroceryItem>> loadedItems;
   String? error;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    _loadItem();
+    loadedItems = _loadItem();
   }
 
-  void _loadItem() async {
+  Future<List<GroceryItem>> _loadItem() async {
     final url = Uri.https(
         'flutterprep-a2d8e-default-rtdb.firebaseio.com', 'shopping-list.json');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode >= 400) {
-        setState(() {
-          error = "Try again later";
-        });
-      }
-      final Map<String, dynamic> loadItem = json.decode(response.body);
-      final List<GroceryItem> indentedItem = [];
-      for (final item in loadItem.entries) {
-        final category = categories.entries
-            .firstWhere(
-              (catItem) => catItem.value.name == item.value["category"],
-            )
-            .value;
-        indentedItem.add(GroceryItem(
-          id: item.key,
-          name: item.value['name'],
-          quantity: item.value['quantity'],
-          category: category,
-        ));
-      }
-      setState(() {
-        listCategories = indentedItem;
-        _isloading = false;
-      });
-    } catch (errorException) {
-      setState(() {
-        error = "An error occured, try again later";
-      });
+    //try {
+    final response = await http.get(url);
+    if (response.statusCode >= 400) {
+      throw Exception("An error occured, please try again later");
+      // setState(() {
+      //   error = "Try again later";
+      // });
     }
+    final Map<String, dynamic> loadItem = json.decode(response.body);
+    final List<GroceryItem> indentedItem = [];
+    for (final item in loadItem.entries) {
+      final category = categories.entries
+          .firstWhere(
+            (catItem) => catItem.value.name == item.value["category"],
+          )
+          .value;
+      indentedItem.add(GroceryItem(
+        id: item.key,
+        name: item.value['name'],
+        quantity: item.value['quantity'],
+        category: category,
+      ));
+    }
+    return indentedItem;
+    // } catch (errorException) {
+    //   setState(() {
+    //     error = "An error occured, try again later";
+    //   });
+    // }
   }
 
   void _addNewItem() async {
@@ -124,42 +122,6 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = Center(
-      child: Text(
-        "Empty grocery",
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
-    );
-    if (_isloading) {
-      content = const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
-    }
-    if (error != null) {
-      content = Center(
-        child: Text(
-          error!,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-      );
-    }
-    if (listCategories.isNotEmpty) {
-      content = ListView.builder(
-        itemCount: listCategories.length,
-        itemBuilder: (context, index) => Dismissible(
-          key: ValueKey(listCategories[index]),
-          background: Container(
-            color: Theme.of(context).colorScheme.onError,
-            margin: const EdgeInsets.symmetric(horizontal: 10),
-          ),
-          onDismissed: (direction) => _disMissItem(listCategories[index]),
-          child: Item(
-            groceryItem: listCategories[index],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -171,7 +133,46 @@ class _HomeState extends State<Home> {
         centerTitle: false,
         title: const Text("Your Groceries"),
       ),
-      body: content,
+      body: FutureBuilder(
+        future: loadedItems,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                snapshot.error.toString(),
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            );
+          }
+          if (snapshot.data!.isEmpty) {
+            return Center(
+              child: Text(
+                "Empty grocery",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            );
+          }
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) => Dismissible(
+              key: ValueKey(snapshot.data![index]),
+              background: Container(
+                color: Theme.of(context).colorScheme.onError,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+              ),
+              onDismissed: (direction) => _disMissItem(snapshot.data![index]),
+              child: Item(
+                groceryItem: snapshot.data![index],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
