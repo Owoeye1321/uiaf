@@ -133,6 +133,7 @@ class _HomeState extends State<Home> {
         centerTitle: false,
         title: const Text("Your Groceries"),
       ),
+      //this future builder isn't suitable for rendering ui with a stateful lifecycle
       body: FutureBuilder(
         future: loadedItems,
         builder: (context, snapshot) {
