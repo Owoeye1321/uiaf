@@ -30,13 +30,8 @@ class _HomeState extends State<Home> {
   Future<List<GroceryItem>> _loadItem() async {
     final url = Uri.https(
         'flutterprep-a2d8e-default-rtdb.firebaseio.com', 'shopping-list.json');
-    //try {
     final response = await http.get(url);
     if (response.statusCode >= 400) {
-      throw Exception("An error occured, please try again later");
-      // setState(() {
-      //   error = "Try again later";
-      // });
     }
     final Map<String, dynamic> loadItem = json.decode(response.body);
     final List<GroceryItem> indentedItem = [];
@@ -54,11 +49,6 @@ class _HomeState extends State<Home> {
       ));
     }
     return indentedItem;
-    // } catch (errorException) {
-    //   setState(() {
-    //     error = "An error occured, try again later";
-    //   });
-    // }
   }
 
   void _addNewItem() async {
